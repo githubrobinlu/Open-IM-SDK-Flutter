@@ -4,6 +4,7 @@ import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.openim.flutter_openim_sdk.listener.OnAdvancedMsgListener;
 import io.openim.flutter_openim_sdk.listener.OnBaseListener;
+import io.openim.flutter_openim_sdk.listener.OnCustomBusinessListener;
 import io.openim.flutter_openim_sdk.listener.OnMsgSendListener;
 import io.openim.flutter_openim_sdk.util.CommonUtil;
 import open_im_sdk.Open_im_sdk;
@@ -11,77 +12,12 @@ import open_im_sdk.Open_im_sdk;
 
 public class MessageManager extends BaseManager {
     private final static String KEY_ID = "id";
-    //    private final static Map<String, OnAdvancedMsgListener> listeners = new HashMap<>();
- /*   private static boolean initializedListener = false;
-    private final static Map<String, AdvancedMsgListener> listeners = new ConcurrentHashMap<>();
 
-    protected void clearListeners() {
-        initializedListener = false;
-        listeners.clear();
-    }
-
-    private final static OnAdvancedMsgListener sdkMsgListener = new OnAdvancedMsgListener() {
-        @Override
-        public void onRecvC2CReadReceipt(String s) {
-            for (AdvancedMsgListener l : listeners.values()) {
-                l.onRecvC2CReadReceipt(s);
-            }
-        }
-
-        @Override
-        public void onRecvMessageRevoked(String s) {
-            for (AdvancedMsgListener l : listeners.values()) {
-                l.onRecvMessageRevoked(s);
-            }
-        }
-
-        @Override
-        public void onRecvNewMessage(String s) {
-            for (AdvancedMsgListener l : listeners.values()) {
-                l.onRecvNewMessage(s);
-            }
-        }
-    };
-
-    public void addAdvancedMsgListener(MethodCall methodCall, MethodChannel.Result result) {
-        String key = methodCall.argument(KEY_ID);
-        Open_im_sdk.addAdvancedMsgListener(new AdvancedMsgListener(key));
-        listeners.put(key, new AdvancedMsgListener(key));
-        if (!initializedListener) {
-            initializedListener = true;
-            Open_im_sdk.addAdvancedMsgListener(sdkMsgListener);
-        }
-    }
-
-    public void removeAdvancedMsgListener(MethodCall methodCall, MethodChannel.Result result) {
-        String key = methodCall.argument(KEY_ID);
-        listeners.remove(key);
-        if (listeners.isEmpty()) {
-            initializedListener = false;
-            Open_im_sdk.removeAdvancedMsgListener(sdkMsgListener);
-        }
-    }*/
-/*
-
-    public void addAdvancedMsgListener(MethodCall methodCall, MethodChannel.Result result) {
-        String key = methodCall.argument(KEY_ID);
-        if (!listeners.containsKey(key)) {
-            AdvancedMsgListener listener = new AdvancedMsgListener(key);
-            listeners.put(methodCall.argument(KEY_ID), listener);
-            Open_im_sdk.addAdvancedMsgListener(listener);
-        }
-    }
-
-    public void removeAdvancedMsgListener(MethodCall methodCall, MethodChannel.Result result) {
-        String key = methodCall.argument(KEY_ID);
-        OnAdvancedMsgListener listener = listeners.remove(key);
-        Open_im_sdk.removeAdvancedMsgListener(listener);
-    }
-
-*/
     public void setAdvancedMsgListener(MethodCall methodCall, MethodChannel.Result result) {
         String key = methodCall.argument(KEY_ID);
         Open_im_sdk.setAdvancedMsgListener(new OnAdvancedMsgListener(key));
+
+        result.success(null);
     }
 
     public void sendMessage(MethodCall methodCall, MethodChannel.Result result) {
@@ -91,15 +27,8 @@ public class MessageManager extends BaseManager {
                 jsonValue(methodCall, "message"),
                 value(methodCall, "userID"),
                 value(methodCall, "groupID"),
-                jsonValue(methodCall, "offlinePushInfo")
-        );
-    }
-
-    public void getHistoryMessageList(MethodCall methodCall, MethodChannel.Result result) {
-        Open_im_sdk.getHistoryMessageList(
-                new OnBaseListener(result, methodCall),
-                value(methodCall, "operationID"),
-                jsonValue(methodCall)
+                jsonValue(methodCall, "offlinePushInfo"),
+                value(methodCall, "isOnlineOnly")
         );
     }
 
@@ -107,7 +36,8 @@ public class MessageManager extends BaseManager {
         Open_im_sdk.revokeMessage(
                 new OnBaseListener(result, methodCall),
                 value(methodCall, "operationID"),
-                jsonValue(methodCall)
+                value(methodCall, "conversationID"),
+                value(methodCall, "clientMsgID")
         );
     }
 
@@ -115,13 +45,33 @@ public class MessageManager extends BaseManager {
         Open_im_sdk.deleteMessageFromLocalStorage(
                 new OnBaseListener(result, methodCall),
                 value(methodCall, "operationID"),
-                jsonValue(methodCall)
+                value(methodCall, "conversationID"),
+                value(methodCall, "clientMsgID")
         );
     }
 
-//    public void deleteMessages(MethodCall methodCall, MethodChannel.Result result) {
-//        Open_im_sdk.deleteMessages(new OnBaseListener(result, methodCall), CommonUtil.getSDKJsonParam(methodCall));
-//    }
+    public void deleteMessageFromLocalAndSvr(MethodCall methodCall, MethodChannel.Result result) {
+        Open_im_sdk.deleteMessage(
+                new OnBaseListener(result, methodCall),
+                value(methodCall, "operationID"),
+                value(methodCall, "conversationID"),
+                value(methodCall, "clientMsgID")
+        );
+    }
+
+    public void deleteAllMsgFromLocal(MethodCall methodCall, MethodChannel.Result result) {
+        Open_im_sdk.deleteAllMsgFromLocal(
+                new OnBaseListener(result, methodCall),
+                value(methodCall, "operationID")
+        );
+    }
+
+    public void deleteAllMsgFromLocalAndSvr(MethodCall methodCall, MethodChannel.Result result) {
+        Open_im_sdk.deleteAllMsgFromLocalAndSvr(
+                new OnBaseListener(result, methodCall),
+                value(methodCall, "operationID")
+        );
+    }
 
     public void insertSingleMessageToLocalStorage(MethodCall methodCall, MethodChannel.Result result) {
         Open_im_sdk.insertSingleMessageToLocalStorage(
@@ -143,20 +93,11 @@ public class MessageManager extends BaseManager {
         );
     }
 
-    public void markC2CMessageAsRead(MethodCall methodCall, MethodChannel.Result result) {
-        Open_im_sdk.markC2CMessageAsRead(
+    public void markMessagesAsReadByMsgID(MethodCall methodCall, MethodChannel.Result result) {
+        Open_im_sdk.markMessagesAsReadByMsgID(
                 new OnBaseListener(result, methodCall),
                 value(methodCall, "operationID"),
-                value(methodCall, "userID"),
-                jsonValue(methodCall, "messageIDList")
-        );
-    }
-
-    public void markGroupMessageAsRead(MethodCall methodCall, MethodChannel.Result result) {
-        Open_im_sdk.markGroupMessageAsRead(
-                new OnBaseListener(result, methodCall),
-                value(methodCall, "operationID"),
-                value(methodCall, "groupID"),
+                value(methodCall, "conversationID"),
                 jsonValue(methodCall, "messageIDList")
         );
     }
@@ -201,6 +142,7 @@ public class MessageManager extends BaseManager {
                         value(methodCall, "operationID"),
                         value(methodCall, "imagePath")));
     }
+
     public void createSoundMessage(MethodCall methodCall, MethodChannel.Result result) {
         CommonUtil.runMainThreadReturn(result,
                 Open_im_sdk.createSoundMessage(
@@ -311,20 +253,23 @@ public class MessageManager extends BaseManager {
         ));
     }
 
-    public void clearC2CHistoryMessage(MethodCall methodCall, MethodChannel.Result result) {
-        Open_im_sdk.clearC2CHistoryMessage(
-                new OnBaseListener(result, methodCall),
-                value(methodCall, "operationID"),
-                value(methodCall, "userID")
-        );
+    public void createAdvancedTextMessage(MethodCall methodCall, MethodChannel.Result result) {
+        CommonUtil.runMainThreadReturn(result,
+                Open_im_sdk.createAdvancedTextMessage(
+                        value(methodCall, "operationID"),
+                        value(methodCall, "text"),
+                        jsonValue(methodCall, "richMessageInfoList")
+                ));
     }
 
-    public void clearGroupHistoryMessage(MethodCall methodCall, MethodChannel.Result result) {
-        Open_im_sdk.clearGroupHistoryMessage(
-                new OnBaseListener(result, methodCall),
-                value(methodCall, "operationID"),
-                value(methodCall, "groupID")
-        );
+    public void createAdvancedQuoteMessage(MethodCall methodCall, MethodChannel.Result result) {
+        CommonUtil.runMainThreadReturn(result,
+                Open_im_sdk.createAdvancedQuoteMessage(
+                        value(methodCall, "operationID"),
+                        value(methodCall, "quoteText"),
+                        jsonValue(methodCall, "quoteMessage"),
+                        jsonValue(methodCall, "richMessageInfoList")
+                ));
     }
 
     public void searchLocalMessages(MethodCall methodCall, MethodChannel.Result result) {
@@ -335,58 +280,104 @@ public class MessageManager extends BaseManager {
         );
     }
 
-    public void deleteMessageFromLocalAndSvr(MethodCall methodCall, MethodChannel.Result result) {
-        Open_im_sdk.deleteMessageFromLocalAndSvr(
+
+    public void clearConversationAndDeleteAllMsg(MethodCall methodCall, MethodChannel.Result result) {
+        Open_im_sdk.clearConversationAndDeleteAllMsg(
+                new OnBaseListener(result, methodCall),
+                value(methodCall, "operationID"),
+                value(methodCall, "conversationID")
+        );
+    }
+
+
+    public void getAdvancedHistoryMessageList(MethodCall methodCall, MethodChannel.Result result) {
+        Open_im_sdk.getAdvancedHistoryMessageList(
                 new OnBaseListener(result, methodCall),
                 value(methodCall, "operationID"),
                 jsonValue(methodCall)
         );
     }
 
-    public void deleteAllMsgFromLocal(MethodCall methodCall, MethodChannel.Result result) {
-        Open_im_sdk.deleteAllMsgFromLocal(
+    public void getAdvancedHistoryMessageListReverse(MethodCall methodCall, MethodChannel.Result result) {
+        Open_im_sdk.getAdvancedHistoryMessageListReverse(
                 new OnBaseListener(result, methodCall),
-                value(methodCall, "operationID")
+                value(methodCall, "operationID"),
+                jsonValue(methodCall)
         );
     }
 
-    public void deleteAllMsgFromLocalAndSvr(MethodCall methodCall, MethodChannel.Result result) {
-        Open_im_sdk.deleteAllMsgFromLocalAndSvr(
+    public void findMessageList(MethodCall methodCall, MethodChannel.Result result) {
+        Open_im_sdk.findMessageList(
                 new OnBaseListener(result, methodCall),
-                value(methodCall, "operationID")
+                value(methodCall, "operationID"),
+                jsonValue(methodCall, "searchParams")
         );
     }
 
-    public void markMessageAsReadByConID(MethodCall methodCall, MethodChannel.Result result) {
-        Open_im_sdk.markMessageAsReadByConID(
+    public void setMessageLocalEx(MethodCall methodCall, MethodChannel.Result result) {
+        Open_im_sdk.setMessageLocalEx(
                 new OnBaseListener(result, methodCall),
                 value(methodCall, "operationID"),
                 value(methodCall, "conversationID"),
-                jsonValue(methodCall, "messageIDList")
+                value(methodCall, "clientMsgID"),
+                value(methodCall, "localEx")
         );
     }
 
-    public void clearC2CHistoryMessageFromLocalAndSvr(MethodCall methodCall, MethodChannel.Result result) {
-        Open_im_sdk.clearC2CHistoryMessageFromLocalAndSvr(
+    public void setAppBadge(MethodCall methodCall, MethodChannel.Result result) {
+        Open_im_sdk.setAppBadge(
                 new OnBaseListener(result, methodCall),
                 value(methodCall, "operationID"),
-                value(methodCall, "userID")
+                value(methodCall, "count")
         );
     }
 
-    public void clearGroupHistoryMessageFromLocalAndSvr(MethodCall methodCall, MethodChannel.Result result) {
-        Open_im_sdk.clearGroupHistoryMessageFromLocalAndSvr(
-                new OnBaseListener(result, methodCall),
+    public void sendMessageNotOss(MethodCall methodCall, MethodChannel.Result result) {
+        Open_im_sdk.sendMessageNotOss(
+                new OnMsgSendListener(result, methodCall),
                 value(methodCall, "operationID"),
-                value(methodCall, "groupID")
+                jsonValue(methodCall, "message"),
+                value(methodCall, "userID"),
+                value(methodCall, "groupID"),
+                jsonValue(methodCall, "offlinePushInfo"),
+                value(methodCall, "isOnlineOnly")
         );
     }
 
-    public void getHistoryMessageListReverse(MethodCall methodCall, MethodChannel.Result result) {
-        Open_im_sdk.getHistoryMessageListReverse(
-                new OnBaseListener(result, methodCall),
-                value(methodCall, "operationID"),
-                jsonValue(methodCall)
-        );
+    public void createImageMessageByURL(MethodCall methodCall, MethodChannel.Result result) {
+        CommonUtil.runMainThreadReturn(result,
+                Open_im_sdk.createImageMessageByURL(
+                        value(methodCall, "operationID"),
+                        value(methodCall, "sourcePath"),
+                        jsonValue(methodCall, "sourcePicture"),
+                        jsonValue(methodCall, "bigPicture"),
+                        jsonValue(methodCall, "snapshotPicture")));
+    }
+
+    public void createSoundMessageByURL(MethodCall methodCall, MethodChannel.Result result) {
+        CommonUtil.runMainThreadReturn(result,
+                Open_im_sdk.createSoundMessageByURL(
+                        value(methodCall, "operationID"),
+                        jsonValue(methodCall, "soundElem")));
+    }
+
+    public void createVideoMessageByURL(MethodCall methodCall, MethodChannel.Result result) {
+        CommonUtil.runMainThreadReturn(result,
+                Open_im_sdk.createVideoMessageByURL(
+                        value(methodCall, "operationID"),
+                        jsonValue(methodCall, "videoElem")));
+    }
+
+    public void createFileMessageByURL(MethodCall methodCall, MethodChannel.Result result) {
+        CommonUtil.runMainThreadReturn(result,
+                Open_im_sdk.createFileMessageByURL(
+                        value(methodCall, "operationID"),
+                        jsonValue(methodCall, "fileElem")));
+    }
+
+    public void setCustomBusinessListener(MethodCall methodCall, MethodChannel.Result result) {
+        Open_im_sdk.setCustomBusinessListener(new OnCustomBusinessListener());
+
+        result.success(null);
     }
 }

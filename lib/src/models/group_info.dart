@@ -1,18 +1,57 @@
+import 'package:flutter_openim_sdk/flutter_openim_sdk.dart';
+
+/// Group Information
 class GroupInfo {
+  /// Group ID
   String groupID;
+
+  /// Group Name
   String? groupName;
+
+  /// Group Announcement
   String? notification;
+
+  /// Group Introduction
   String? introduction;
+
+  /// Group Avatar
   String? faceURL;
+
+  /// Owner's ID
   String? ownerUserID;
+
+  /// Creation Time
   int? createTime;
+
+  /// Number of Group Members
   int? memberCount;
 
-  /// ok = 0 blocked = 1 Dismissed = 2 Muted  = 3
+  /// Group Status: 0 - Normal, 1 - Blocked, 2 - Dissolved, 3 - Muted
   int? status;
+
+  /// Creator's ID
   String? creatorUserID;
+
+  /// Group Type [GroupType]
   int? groupType;
+
+  /// Extra Information
   String? ex;
+
+  /// Entry Verification Method [GroupVerification]
+  int? needVerification;
+
+  /// Don't Allow Access to Member Information via the Group: 0 - Disabled, 1 - Enabled
+  int? lookMemberInfo;
+
+  /// Don't Allow Adding Friends via the Group: 0 - Disabled, 1 - Enabled
+  int? applyMemberFriend;
+
+  /// Notification Update Time
+  int? notificationUpdateTime;
+
+  /// Notification Initiator
+  String? notificationUserID;
 
   GroupInfo({
     required this.groupID,
@@ -27,10 +66,14 @@ class GroupInfo {
     this.creatorUserID,
     this.groupType,
     this.ex,
+    this.needVerification,
+    this.lookMemberInfo,
+    this.applyMemberFriend,
+    this.notificationUpdateTime,
+    this.notificationUserID,
   });
 
   GroupInfo.fromJson(Map<String, dynamic> json) : groupID = json['groupID'] {
-    /*groupID = json['groupID'];*/
     groupName = json['groupName'];
     notification = json['notification'];
     introduction = json['introduction'];
@@ -42,6 +85,11 @@ class GroupInfo {
     creatorUserID = json['creatorUserID'];
     groupType = json['groupType'];
     ex = json['ex'];
+    needVerification = json['needVerification'];
+    lookMemberInfo = json['lookMemberInfo'];
+    applyMemberFriend = json['applyMemberFriend'];
+    notificationUpdateTime = json['notificationUpdateTime'];
+    notificationUserID = json['notificationUserID'];
   }
 
   Map<String, dynamic> toJson() {
@@ -58,22 +106,67 @@ class GroupInfo {
     data['creatorUserID'] = this.creatorUserID;
     data['groupType'] = this.groupType;
     data['ex'] = this.ex;
+    data['needVerification'] = this.needVerification;
+    data['lookMemberInfo'] = this.lookMemberInfo;
+    data['applyMemberFriend'] = this.applyMemberFriend;
+    data['notificationUpdateTime'] = this.notificationUpdateTime;
+    data['notificationUserID'] = this.notificationUserID;
     return data;
   }
+
+  /// Corresponding Conversation Type for Group Type
+  int get sessionType => groupType == GroupType.general
+      ? ConversationType.group
+      : ConversationType.superGroup;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is GroupInfo &&
+          runtimeType == other.runtimeType &&
+          groupID == other.groupID;
+
+  @override
+  int get hashCode => groupID.hashCode;
 }
 
+/// Group Member Information
 class GroupMembersInfo {
+  /// Group ID
   String? groupID;
+
+  /// User ID
   String? userID;
+
+  /// Nickname
   String? nickname;
+
+  /// Avatar
   String? faceURL;
+
+  /// Role [GroupRoleLevel]
   int? roleLevel;
+
+  /// Join Time
   int? joinTime;
+
+  /// Entry Source: 2 - Invited, 3 - Searched, 4 - QR Code
   int? joinSource;
+
+  /// Operator's ID
   String? operatorUserID;
-  String? ext;
+
+  /// Extra Information
+  String? ex;
+
+  /// Mute End Time (seconds)
   int? muteEndTime;
-  int? appMangerLevel;
+
+  /// Application Manager Level
+  int? appManagerLevel;
+
+  /// Inviter's User ID
+  String? inviterUserID;
 
   GroupMembersInfo({
     this.groupID,
@@ -82,11 +175,12 @@ class GroupMembersInfo {
     this.joinTime,
     this.nickname,
     this.faceURL,
-    this.ext,
+    this.ex,
     this.joinSource,
     this.operatorUserID,
     this.muteEndTime,
-    this.appMangerLevel,
+    this.appManagerLevel,
+    this.inviterUserID,
   });
 
   GroupMembersInfo.fromJson(Map<String, dynamic> json) {
@@ -96,11 +190,12 @@ class GroupMembersInfo {
     joinTime = json['joinTime'];
     nickname = json['nickname'];
     faceURL = json['faceURL'];
-    ext = json['ext'];
+    ex = json['ex'];
     joinSource = json['joinSource'];
     operatorUserID = json['operatorUserID'];
     muteEndTime = json['muteEndTime'];
-    appMangerLevel = json['appMangerLevel'];
+    appManagerLevel = json['appManagerLevel'];
+    inviterUserID = json['inviterUserID'];
   }
 
   Map<String, dynamic> toJson() {
@@ -111,20 +206,33 @@ class GroupMembersInfo {
     data['joinTime'] = this.joinTime;
     data['nickname'] = this.nickname;
     data['faceURL'] = this.faceURL;
-    data['ext'] = this.ext;
+    data['ex'] = this.ex;
     data['joinSource'] = this.joinSource;
     data['operatorUserID'] = this.operatorUserID;
     data['muteEndTime'] = this.muteEndTime;
-    data['appMangerLevel'] = this.appMangerLevel;
+    data['appManagerLevel'] = this.appManagerLevel;
+    data['inviterUserID'] = this.inviterUserID;
     return data;
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is GroupMembersInfo &&
+          runtimeType == other.runtimeType &&
+          groupID == other.groupID &&
+          userID == other.userID;
+
+  @override
+  int get hashCode => groupID.hashCode ^ userID.hashCode;
 }
 
+/// Group Member Role
 class GroupMemberRole {
+  /// User ID
   String? userID;
 
-  /// 1 ordinary member, 2 group owners, 3 administrators
-  /// 1普通成员, 2群主，3管理员
+  /// [GroupRoleLevel] 1: Normal Member, 2: Group Owner, 3: Administrator
   int? roleLevel;
 
   GroupMemberRole({this.userID, this.roleLevel = 1});
@@ -142,32 +250,79 @@ class GroupMemberRole {
   }
 }
 
+/// Group Application Information
 class GroupApplicationInfo {
+  /// Group ID
   String? groupID;
+
+  /// Group Nickname
   String? groupName;
+
+  /// Group Announcement
   String? notification;
+
+  /// Group Introduction
   String? introduction;
+
+  /// Group Avatar
   String? groupFaceURL;
+
+  /// Group Creation Time
   int? createTime;
+
+  /// Group Status
   int? status;
+
+  /// Creator's ID
   String? creatorUserID;
+
+  /// Group Type
   int? groupType;
+
+  /// Owner's ID
   String? ownerUserID;
+
+  /// Member Count
   int? memberCount;
+
+  /// User ID Initiating the Group Join Request
   String? userID;
+
+  /// User's Nickname Initiating the Group Join Request
   String? nickname;
+
+  /// User's Avatar Initiating the Group Join Request
   String? userFaceURL;
+
+  /// User's Gender Initiating the Group Join Request
   int? gender;
 
-  /// REFUSE = -1, AGREE = 1
-  /// -1：拒绝，1：同意
+  /// Handling Result: -1 - Rejected, 1 - Accepted
   int? handleResult;
+
+  /// Request Description
   String? reqMsg;
+
+  /// Handling Result Description
   String? handledMsg;
+
+  /// Request Time
   int? reqTime;
+
+  /// Handler User ID
   String? handleUserID;
+
+  /// Handling Time
   int? handledTime;
+
+  /// Extra Information
   String? ex;
+
+  /// Join Source: 2 - Invited, 3 - Searched, 4 - QR Code
+  int? joinSource;
+
+  /// Inviting User's ID
+  String? inviterUserID;
 
   GroupApplicationInfo({
     this.groupID,
@@ -192,6 +347,8 @@ class GroupApplicationInfo {
     this.handleUserID,
     this.handledTime,
     this.ex,
+    this.inviterUserID,
+    this.joinSource,
   });
 
   GroupApplicationInfo.fromJson(Map<String, dynamic> json) {
@@ -217,6 +374,8 @@ class GroupApplicationInfo {
     handleUserID = json['handleUserID'];
     handledTime = json['handledTime'];
     ex = json['ex'];
+    inviterUserID = json['inviterUserID'];
+    joinSource = json['joinSource'];
   }
 
   Map<String, dynamic> toJson() {
@@ -243,10 +402,13 @@ class GroupApplicationInfo {
     data['handleUserID'] = this.handleUserID;
     data['handledTime'] = this.handledTime;
     data['ex'] = this.ex;
+    data['inviterUserID'] = this.inviterUserID;
+    data['joinSource'] = this.joinSource;
     return data;
   }
 }
 
+/// Group Invitation Result
 class GroupInviteResult {
   String? userID;
   int? result;

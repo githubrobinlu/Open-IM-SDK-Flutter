@@ -1,46 +1,47 @@
+/// SDK Connection State Listener
 class OnConnectListener {
-  /// SDK failed to connect to the server
   Function(int? code, String? errorMsg)? onConnectFailed;
-
-  /// SDK has successfully connected to the server
   Function()? onConnectSuccess;
-
-  /// SDK is connecting to the server
   Function()? onConnecting;
-
-  /// The current user is kicked offline.
-  /// At this time, the UI can prompt the user and call IMManager's login() function to log in again.
   Function()? onKickedOffline;
-
-  ///  Ticket expired when online.
-  ///  At this time, you need to generate a new userSig and call IMManager's login() function to log in again
-  Function()? onUserSigExpired;
+  Function()? onUserTokenExpired;
+  Function()? onUserTokenInvalid;
 
   OnConnectListener({
     this.onConnectFailed,
     this.onConnectSuccess,
     this.onConnecting,
     this.onKickedOffline,
-    this.onUserSigExpired,
+    this.onUserTokenExpired,
+    this.onUserTokenInvalid,
   });
 
+  /// SDK failed to connect to the server
   void connectFailed(int? code, String? errorMsg) {
-    if (null != onConnectFailed) onConnectFailed!(code, errorMsg);
+    onConnectFailed?.call(code, errorMsg);
   }
 
+  /// SDK successfully connected to the server
   void connectSuccess() {
-    if (null != onConnectSuccess) onConnectSuccess!();
+    onConnectSuccess?.call();
   }
 
+  /// SDK is currently connecting to the server
   void connecting() {
-    if (null != onConnecting) onConnecting!.call();
+    onConnecting?.call();
   }
 
+  /// The account has been logged in from another location, and the current device has been kicked offline
   void kickedOffline() {
-    if (null != onKickedOffline) onKickedOffline!();
+    onKickedOffline?.call();
   }
 
-  void userSigExpired() {
-    if (null != onUserSigExpired) onUserSigExpired!();
+  /// Login credentials have expired and require reauthentication
+  void userTokenExpired() {
+    onUserTokenExpired?.call();
+  }
+
+  void userTokenInvalid() {
+    onUserTokenInvalid?.call();
   }
 }

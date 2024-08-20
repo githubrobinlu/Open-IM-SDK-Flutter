@@ -1,9 +1,13 @@
 import 'package:flutter_openim_sdk/flutter_openim_sdk.dart';
 
 class SearchResult {
-  /// 获取到的总的消息数量
+  /// Total number of messages obtained
   int? totalCount;
+
+  /// Specific search results
   List<SearchResultItems>? searchResultItems;
+
+  List<SearchResultItems>? findResultItems;
 
   SearchResult({this.totalCount, this.searchResultItems});
 
@@ -15,32 +19,44 @@ class SearchResult {
         searchResultItems!.add(SearchResultItems.fromJson(v));
       });
     }
+    if (json['findResultItems'] != null) {
+      findResultItems = <SearchResultItems>[];
+      json['findResultItems'].forEach((v) {
+        findResultItems!.add(SearchResultItems.fromJson(v));
+      });
+    }
   }
 
   Map<String, dynamic> toJson() {
     final data = Map<String, dynamic>();
     data['totalCount'] = this.totalCount;
     if (this.searchResultItems != null) {
-      data['searchResultItems'] =
-          this.searchResultItems!.map((v) => v.toJson()).toList();
+      data['searchResultItems'] = this.searchResultItems!.map((v) => v.toJson()).toList();
+    }
+    if (this.findResultItems != null) {
+      data['findResultItems'] = this.findResultItems!.map((v) => v.toJson()).toList();
     }
     return data;
   }
 }
 
 class SearchResultItems {
-  /// 会话ID
+  /// Conversation ID
   String? conversationID;
 
-  /// 会话类型1单聊，2群聊，3，超级大群，4通知会话
+  /// Conversation type: 1 for single chat, 2 for group chat, 3 for supergroup, 4 for notification conversation
   int? conversationType;
+
+  /// Display name
   String? showName;
+
+  /// Profile picture
   String? faceURL;
 
-  /// 搜索到的这个会话下的消息数量
+  /// Number of messages found in this conversation
   int? messageCount;
 
-  /// [Message]的列表
+  /// List of [Message]s
   List<Message>? messageList;
 
   SearchResultItems({this.conversationID, this.messageCount, this.messageList});
@@ -70,5 +86,44 @@ class SearchResultItems {
       data['messageList'] = this.messageList!.map((v) => v.toJson()).toList();
     }
     return data;
+  }
+}
+
+class SearchParams {
+  String? conversationID;
+  List<String>? clientMsgIDList;
+
+  SearchParams({
+    this.conversationID,
+    this.clientMsgIDList,
+  });
+
+  SearchParams.fromJson(Map<String, dynamic> json) {
+    conversationID = json['conversationID'];
+    if (json['clientMsgIDList'] != null) {
+      clientMsgIDList = json['clientMsgIDList'].cast<String>();
+    }
+  }
+
+  Map<String, dynamic> toJson() {
+    final data = Map<String, dynamic>();
+    data['conversationID'] = this.conversationID;
+    data['clientMsgIDList'] = this.clientMsgIDList;
+    return data;
+  }
+}
+
+class SearchFriendsInfo extends FriendInfo {
+  late int relationship;
+  SearchFriendsInfo({required this.relationship}) : super();
+
+  SearchFriendsInfo.fromJson(Map<String, dynamic> json) : super.fromJson(json) {
+    relationship = json['relationship'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final data = super.toJson();
+    data['relationship'] = this.relationship;
+    return data ?? {};
   }
 }

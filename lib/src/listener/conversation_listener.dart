@@ -1,44 +1,60 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_openim_sdk/flutter_openim_sdk.dart';
 
+/// Conversation Listener
 class OnConversationListener {
   Function(List<ConversationInfo> list)? onConversationChanged;
   Function(List<ConversationInfo> list)? onNewConversation;
   Function(int count)? onTotalUnreadMessageCountChanged;
-  Function()? onSyncServerFailed;
-  Function()? onSyncServerFinish;
-  Function()? onSyncServerStart;
+  Function(bool? reinstalled)? onSyncServerStart;
+  Function(int? progress)? onSyncServerProgress;
+  Function(bool? reinstalled)? onSyncServerFinish;
+  Function(bool? reinstalled)? onSyncServerFailed;
+  ValueChanged<InputStatusChangedData>? onInputStatusChanged;
 
   OnConversationListener({
     this.onConversationChanged,
     this.onNewConversation,
     this.onTotalUnreadMessageCountChanged,
-    this.onSyncServerFailed,
-    this.onSyncServerFinish,
     this.onSyncServerStart,
+    this.onSyncServerProgress,
+    this.onSyncServerFinish,
+    this.onSyncServerFailed,
+    this.onInputStatusChanged,
   });
 
+  /// Conversations have changed
   void conversationChanged(List<ConversationInfo> list) {
-    if (onConversationChanged != null) onConversationChanged!(list);
+    onConversationChanged?.call(list);
   }
 
+  /// New conversations have been created
   void newConversation(List<ConversationInfo> list) {
-    if (onNewConversation != null) onNewConversation!(list);
+    onNewConversation?.call(list);
   }
 
-  void syncServerFailed() {
-    if (onSyncServerFailed != null) onSyncServerFailed!();
+  /// Total unread message count has changed
+  void totalUnreadMessageCountChanged(int count) {
+    onTotalUnreadMessageCountChanged?.call(count);
   }
 
-  void syncServerFinish() {
-    if (onSyncServerFinish != null) onSyncServerFinish!();
+  void syncServerStart(bool? reinstalled) {
+    onSyncServerStart?.call(reinstalled);
   }
 
-  void syncServerStart() {
-    if (onSyncServerStart != null) onSyncServerStart!();
+  void syncServerProgress(int? progress) {
+    onSyncServerProgress?.call(progress);
   }
 
-  void totalUnreadMessageCountChanged(int i) {
-    if (onTotalUnreadMessageCountChanged != null)
-      onTotalUnreadMessageCountChanged!(i);
+  void syncServerFailed(bool? reinstalled) {
+    onSyncServerFailed?.call(reinstalled);
+  }
+
+  void syncServerFinish(bool? reinstalled) {
+    onSyncServerFinish?.call(reinstalled);
+  }
+
+  void conversationUserInputStatusChanged(InputStatusChangedData data) {
+    onInputStatusChanged?.call(data);
   }
 }

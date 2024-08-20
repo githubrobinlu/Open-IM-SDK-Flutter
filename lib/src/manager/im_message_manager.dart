@@ -4,14 +4,13 @@ import 'package:flutter_openim_sdk/flutter_openim_sdk.dart';
 class MessageManager {
   MethodChannel _channel;
 
-  // List<AdvancedMsgListener> advancedMsgListeners = List.empty(growable: true);
   OnMsgSendProgressListener? msgSendProgressListener;
   late OnAdvancedMsgListener msgListener;
+  OnCustomBusinessListener? customBusinessListener;
 
   MessageManager(this._channel);
 
-  /// Set a message listener
-  /// 消息监听
+  /// Message listener
   Future setAdvancedMsgListener(OnAdvancedMsgListener listener) {
     this.msgListener = listener;
     // advancedMsgListeners.add(listener);
@@ -22,23 +21,22 @@ class MessageManager {
         }));
   }
 
-  /// Set up message sending progress monitoring
-  /// 消息发送进度监听
+  /// Message send progress listener
   void setMsgSendProgressListener(OnMsgSendProgressListener listener) {
     msgSendProgressListener = listener;
   }
 
-  /// Send a message to user or to group
-  /// [userID] receiver's user ID
-  /// 发送消息
-  /// [userID]接收消息的用户id
-  /// [groupID]接收消息的组id
-  /// [offlinePushInfo]离线消息显示内容
+  /// Send a message
+  /// [message] Message content
+  /// [userID] User ID of the recipient
+  /// [groupID] Group ID of the recipient
+  /// [offlinePushInfo] Offline message display content
   Future<Message> sendMessage({
     required Message message,
     required OfflinePushInfo offlinePushInfo,
     String? userID,
     String? groupID,
+    bool isOnlineOnly = false,
     String? operationID,
   }) =>
       _channel
@@ -49,70 +47,66 @@ class MessageManager {
                 'offlinePushInfo': offlinePushInfo.toJson(),
                 'userID': userID ?? '',
                 'groupID': groupID ?? '',
+                'isOnlineOnly': isOnlineOnly,
                 'operationID': Utils.checkOperationID(operationID),
               }))
           .then((value) => Utils.toObj(value, (map) => Message.fromJson(map)));
 
-  /// Find all history message
-  /// 获取聊天记录(以startMsg为节点，以前的聊天记录)
-  /// [userID] 接收消息的用户id
-  /// [conversationID] 会话id，查询通知时可用
-  /// [groupID] 接收消息的组id
-  /// [startMsg] 从这条消息开始查询[count]条，获取的列表index==length-1为最新消息，所以获取下一页历史记录startMsg=list.first
-  /// [count] 一次拉取的总数
-  Future<List<Message>> getHistoryMessageList({
-    String? userID,
-    String? groupID,
-    String? conversationID,
-    Message? startMsg,
-    int? count,
-    String? operationID,
-  }) =>
-      _channel
-          .invokeMethod(
-              'getHistoryMessageList',
-              _buildParam({
-                'userID': userID ?? '',
-                'groupID': groupID ?? '',
-                'conversationID': conversationID ?? '',
-                'startClientMsgID': startMsg?.clientMsgID ?? '',
-                'count': count ?? 10,
-                'operationID': Utils.checkOperationID(operationID),
-              }))
-          .then((value) => Utils.toList(value, (map) => Message.fromJson(map)));
-
-  /// Revoke the sent information
-  /// 撤回消息
-  Future revokeMessage({
-    required Message message,
-    String? operationID,
-  }) =>
-      _channel.invokeMethod(
-          'revokeMessage',
-          _buildParam(message.toJson()
-            ..addAll({
-              "operationID": Utils.checkOperationID(operationID),
-            })));
-
-  /// Delete message
-  /// 删除本地消息
+  /// Delete a message from local storage
+  /// [message] Message to be deleted
   Future deleteMessageFromLocalStorage({
-    required Message message,
+    required String conversationID,
+    required String clientMsgID,
     String? operationID,
   }) =>
       _channel.invokeMethod(
           'deleteMessageFromLocalStorage',
-          _buildParam(message.toJson()
-            ..addAll({
-              "operationID": Utils.checkOperationID(operationID),
-            })));
+          _buildParam({
+            "conversationID": conversationID,
+            "clientMsgID": clientMsgID,
+            "operationID": Utils.checkOperationID(operationID),
+          }));
 
-  ///
-  // Future deleteMessages({required List<Message> msgList}) =>
-  //     _channel.invokeMethod('deleteMessages',
-  //         _buildParam({"msgList": msgList.map((e) => e.toJson()).toList()}));
+  /// core-sdk: DeleteMessage
+  /// Delete a specified message from local and server
+  /// [message] Message to be deleted
+  Future<dynamic> deleteMessageFromLocalAndSvr({
+    required String conversationID,
+    required String clientMsgID,
+    String? operationID,
+  }) =>
+      _channel.invokeMethod(
+          'deleteMessageFromLocalAndSvr',
+          _buildParam({
+            "conversationID": conversationID,
+            "clientMsgID": clientMsgID,
+            "operationID": Utils.checkOperationID(operationID),
+          }));
 
-  /// 插入单聊消息到本地
+  /// Delete all local chat records
+  Future<dynamic> deleteAllMsgFromLocal({
+    String? operationID,
+  }) =>
+      _channel.invokeMethod(
+          'deleteAllMsgFromLocal',
+          _buildParam({
+            "operationID": Utils.checkOperationID(operationID),
+          }));
+
+  /// Delete all chat records from local and server
+  Future<dynamic> deleteAllMsgFromLocalAndSvr({
+    String? operationID,
+  }) =>
+      _channel.invokeMethod(
+          'deleteAllMsgFromLocalAndSvr',
+          _buildParam({
+            "operationID": Utils.checkOperationID(operationID),
+          }));
+
+  /// Insert a single chat message into local storage
+  /// [receiverID] Receiver's ID
+  /// [senderID] Sender's ID
+  /// [message] Message content
   Future<Message> insertSingleMessageToLocalStorage({
     String? receiverID,
     String? senderID,
@@ -130,7 +124,10 @@ class MessageManager {
               }))
           .then((value) => Utils.toObj(value, (map) => Message.fromJson(map)));
 
-  /// 插入群聊消息到本地
+  /// Insert a group chat message into local storage
+  /// [groupID] Group ID
+  /// [senderID] Sender's ID
+  /// [message] Message content
   Future<Message> insertGroupMessageToLocalStorage({
     String? groupID,
     String? senderID,
@@ -148,39 +145,8 @@ class MessageManager {
               }))
           .then((value) => Utils.toObj(value, (map) => Message.fromJson(map)));
 
-  /// Mark c2c message as read
-  /// 标记c2c消息已读
-  Future markC2CMessageAsRead({
-    required String userID,
-    required List<String> messageIDList,
-    String? operationID,
-  }) =>
-      _channel.invokeMethod(
-          'markC2CMessageAsRead',
-          _buildParam({
-            "messageIDList": messageIDList,
-            "userID": userID,
-            "operationID": Utils.checkOperationID(operationID),
-          }));
-
-  /// Mark group message as read
-  /// 标记群聊消息已读
-  Future markGroupMessageAsRead({
-    required String groupID,
-    required List<String> messageIDList,
-    String? operationID,
-  }) =>
-      _channel.invokeMethod(
-          'markGroupMessageAsRead',
-          _buildParam({
-            "messageIDList": messageIDList,
-            "groupID": groupID,
-            "operationID": Utils.checkOperationID(operationID),
-          }));
-
-  /// Typing
-  /// 正在输入提示
-  /// [msgTip] 自定义内容
+  /// Typing status update
+  /// [msgTip] Custom content
   Future typingStatusUpdate({
     required String userID,
     String? msgTip,
@@ -194,8 +160,7 @@ class MessageManager {
             "operationID": Utils.checkOperationID(operationID),
           }));
 
-  /// Create text message
-  /// 创建文本消息
+  /// Create a text message
   Future<Message> createTextMessage({
     required String text,
     String? operationID,
@@ -209,12 +174,11 @@ class MessageManager {
               }))
           .then((value) => Utils.toObj(value, (map) => Message.fromJson(map)));
 
-  /// Create @ message
-  /// 创建@消息
-  /// [text] 输入内容
-  /// [atUserIDList] 被@到的userID集合
-  /// [atUserInfoList] userID跟nickname映射关系，用在界面显示时将id替换为nickname
-  /// [quoteMessage] 引用消息（被回复的消息）
+  /// Create an @ message
+  /// [text] Input content
+  /// [atUserIDList] Collection of userIDs being mentioned
+  /// [atUserInfoList] Mapping of userID to nickname, used for displaying nicknames instead of IDs in the user interface
+  /// [quoteMessage] Quoted message (the message being replied to)
   Future<Message> createTextAtMessage({
     required String text,
     required List<String> atUserIDList,
@@ -235,8 +199,8 @@ class MessageManager {
           )
           .then((value) => Utils.toObj(value, (map) => Message.fromJson(map)));
 
-  /// Create picture message
-  /// 创建图片消息
+  /// Create an image message
+  /// [imagePath] Path
   Future<Message> createImageMessage({
     required String imagePath,
     String? operationID,
@@ -251,9 +215,8 @@ class MessageManager {
           )
           .then((value) => Utils.toObj(value, (map) => Message.fromJson(map)));
 
-  /// Create picture message
-  /// 创建图片消息
-  /// [imagePath] 路径
+  /// Create an image message from a full path
+  /// [imagePath] Path
   Future<Message> createImageMessageFromFullPath({
     required String imagePath,
     String? operationID,
@@ -268,8 +231,9 @@ class MessageManager {
           )
           .then((value) => Utils.toObj(value, (map) => Message.fromJson(map)));
 
-  /// Create sound message
-  /// 创建语音消息
+  /// Create a sound message
+  /// [soundPath] Path
+  /// [duration] Duration in seconds
   Future<Message> createSoundMessage({
     required String soundPath,
     required int duration,
@@ -286,10 +250,9 @@ class MessageManager {
           )
           .then((value) => Utils.toObj(value, (map) => Message.fromJson(map)));
 
-  /// Create sound message
-  /// 创建语音消息
-  /// [soundPath] 路径
-  /// [duration] 时长s
+  /// Create a sound message from a full path
+  /// [soundPath] Path
+  /// [duration] Duration in seconds
   Future<Message> createSoundMessageFromFullPath({
     required String soundPath,
     required int duration,
@@ -306,8 +269,11 @@ class MessageManager {
           )
           .then((value) => Utils.toObj(value, (map) => Message.fromJson(map)));
 
-  /// Create video message
-  /// 创建视频消息
+  /// Create a video message
+  /// [videoPath] Path
+  /// [videoType] Video MIME type
+  /// [duration] Duration in seconds
+  /// [snapshotPath] Default snapshot image path
   Future<Message> createVideoMessage({
     required String videoPath,
     required String videoType,
@@ -327,12 +293,11 @@ class MessageManager {
               }))
           .then((value) => Utils.toObj(value, (map) => Message.fromJson(map)));
 
-  /// Create video message
-  /// 创建视频消息
-  /// [videoPath] 路径
-  /// [videoType] 视频mime类型
-  /// [duration] 时长s
-  /// [snapshotPath] 默认站位图路径
+  /// Create a video message from a full path
+  /// [videoPath] Path
+  /// [videoType] Video MIME type
+  /// [duration] Duration in seconds
+  /// [snapshotPath] Default snapshot image path
   Future<Message> createVideoMessageFromFullPath({
     required String videoPath,
     required String videoType,
@@ -352,8 +317,9 @@ class MessageManager {
               }))
           .then((value) => Utils.toObj(value, (map) => Message.fromJson(map)));
 
-  /// Create file message
-  /// 创建文件消息
+  /// Create a file message
+  /// [filePath] Path
+  /// [fileName] File name
   Future<Message> createFileMessage({
     required String filePath,
     required String fileName,
@@ -370,10 +336,9 @@ class MessageManager {
         .then((value) => Utils.toObj(value, (map) => Message.fromJson(map)));
   }
 
-  /// Create file message
-  /// 创建文件消息
-  /// [filePath] 路径
-  /// [fileName] 文件名
+  /// Create a file message from a full path
+  /// [filePath] Path
+  /// [fileName] File name
   Future<Message> createFileMessageFromFullPath({
     required String filePath,
     required String fileName,
@@ -389,11 +354,10 @@ class MessageManager {
               }))
           .then((value) => Utils.toObj(value, (map) => Message.fromJson(map)));
 
-  /// Create merger message
-  /// 创建合并消息
-  /// [messageList] 被选中的消息
-  /// [title] 摘要标题
-  /// [summaryList] 摘要内容
+  /// Create a merged message
+  /// [messageList] Selected messages
+  /// [title] Summary title
+  /// [summaryList] Summary content
   Future<Message> createMergerMessage({
     required List<Message> messageList,
     required String title,
@@ -411,9 +375,8 @@ class MessageManager {
               }))
           .then((value) => Utils.toObj(value, (map) => Message.fromJson(map)));
 
-  /// Create forward message
-  /// 创建转发消息
-  /// [message] 被转发的消息
+  /// Create a forwarded message
+  /// [message] Message to be forwarded
   Future<Message> createForwardMessage({
     required Message message,
     String? operationID,
@@ -428,11 +391,10 @@ class MessageManager {
         .then((value) => Utils.toObj(value, (map) => Message.fromJson(map)));
   }
 
-  /// Create location message
-  /// 创建位置消息
-  /// [latitude] 纬度
-  /// [longitude] 经度
-  /// [description] 自定义描述信息
+  /// Create a location message
+  /// [latitude] Latitude
+  /// [longitude] Longitude
+  /// [description] Custom description
   Future<Message> createLocationMessage({
     required double latitude,
     required double longitude,
@@ -450,8 +412,10 @@ class MessageManager {
               }))
           .then((value) => Utils.toObj(value, (map) => Message.fromJson(map)));
 
-  /// Create custom message
-  /// 创建自定义消息
+  /// Create a custom message
+  /// [data] Custom data
+  /// [extension] Custom extension content
+  /// [description] Custom description content
   Future<Message> createCustomMessage({
     required String data,
     required String extension,
@@ -469,10 +433,9 @@ class MessageManager {
               }))
           .then((value) => Utils.toObj(value, (map) => Message.fromJson(map)));
 
-  /// Create quote message
-  /// 创建引用消息
-  /// [text] 回复的内容
-  /// [quoteMsg] 被回复的消息
+  /// Create a quoted message
+  /// [text] Reply content
+  /// [quoteMsg] Message being replied to
   Future<Message> createQuoteMessage({
     required String text,
     required Message quoteMsg,
@@ -488,27 +451,32 @@ class MessageManager {
               }))
           .then((value) => Utils.toObj(value, (map) => Message.fromJson(map)));
 
-  /// Create card message
-  /// 创建卡片消息
+  /// Create a card message
+  /// [data] Custom data
   Future<Message> createCardMessage({
-    required Map<String, dynamic> data,
+    required String userID,
+    required String nickname,
+    String? faceURL,
+    String? ex,
     String? operationID,
   }) =>
       _channel
           .invokeMethod(
               'createCardMessage',
               _buildParam({
-                'cardMessage': data,
+                'cardMessage': {
+                  'userID': userID,
+                  'nickname': nickname,
+                  'faceURL': faceURL,
+                  'ex': ex,
+                },
                 "operationID": Utils.checkOperationID(operationID),
               }))
           .then((value) => Utils.toObj(value, (map) => Message.fromJson(map)));
 
-  /// Create custom emoji message
-  /// [index] The position of the emoji, such as the position emoji
-  /// [data] Other data, such as url expressions
-  /// 创建自定义表情消息
-  /// [index] 位置表情，根据index匹配
-  /// [data] url表情，直接使用url显示
+  /// Create a custom emoji message
+  /// [index] Positional emoji, matched based on index
+  /// [data] URL emoji, displayed directly using the URL
   Future<Message> createFaceMessage({
     int index = -1,
     String? data,
@@ -524,43 +492,16 @@ class MessageManager {
               }))
           .then((value) => Utils.toObj(value, (map) => Message.fromJson(map)));
 
-  /// Clear all c2c history message
-  /// 清空单聊消息记录
-  Future<dynamic> clearC2CHistoryMessage({
-    required String uid,
-    String? operationID,
-  }) =>
-      _channel.invokeMethod(
-          'clearC2CHistoryMessage',
-          _buildParam({
-            "userID": uid,
-            "operationID": Utils.checkOperationID(operationID),
-          }));
-
-  /// Clear all group history
-  /// 清空组消息记录
-  Future<dynamic> clearGroupHistoryMessage({
-    required String gid,
-    String? operationID,
-  }) =>
-      _channel.invokeMethod(
-          'clearGroupHistoryMessage',
-          _buildParam({
-            "groupID": gid,
-            "operationID": Utils.checkOperationID(operationID),
-          }));
-
-  /// Search local message
-  /// 搜索消息
-  /// [conversationID] 根据会话查询，如果是全局搜索传null
-  /// [keywordList]搜索关键词列表，目前仅支持一个关键词搜索
-  /// [keywordListMatchType]关键词匹配模式，1代表与，2代表或，暂时未用
-  /// [senderUserIDList]指定消息发送的uid列表 暂时未用
-  /// [messageTypeList]消息类型列表
-  /// [searchTimePosition]搜索的起始时间点。默认为0即代表从现在开始搜索。UTC 时间戳，单位：秒
-  /// [searchTimePeriod]从起始时间点开始的过去时间范围，单位秒。默认为0即代表不限制时间范围，传24x60x60代表过去一天
-  /// [pageIndex]当前页数
-  /// [count]每页数量
+  /// Search messages
+  /// [conversationID] Query based on conversation, pass null for global search
+  /// [keywordList] Search keyword list, currently supports searching with a single keyword
+  /// [keywordListMatchType] Keyword matching mode, 1 means AND, 2 means OR (currently unused)
+  /// [senderUserIDList] List of UIDs for messages sent (currently unused)
+  /// [messageTypeList] Message type list
+  /// [searchTimePosition] Start time point for searching. Defaults to 0, meaning searching from now. UTC timestamp, in seconds
+  /// [searchTimePeriod] Time range in the past from the start time point, in seconds. Defaults to 0, meaning no time range limitation. Pass 24x60x60 to represent the past day
+  /// [pageIndex] Current page number
+  /// [count] Number of messages per page
   Future<SearchResult> searchLocalMessages({
     String? conversationID,
     List<String> keywordList = const [],
@@ -590,114 +531,265 @@ class MessageManager {
                 },
                 'operationID': Utils.checkOperationID(operationID),
               }))
-          .then((value) =>
-              Utils.toObj(value, (map) => SearchResult.fromJson(map)));
+          .then((value) => Utils.toObj(value, (map) => SearchResult.fromJson(map)));
 
-  /// Delete message from local and service
-  /// 删除本地跟服务器的指定的消息
-  Future<dynamic> deleteMessageFromLocalAndSvr({
-    required Message message,
+  /// Revoke a message
+  /// [message] The message to be revoked
+  Future revokeMessage({
+    required String conversationID,
+    required String clientMsgID,
     String? operationID,
   }) =>
       _channel.invokeMethod(
-          'deleteMessageFromLocalAndSvr',
-          _buildParam(message.toJson()
-            ..addAll({
-              "operationID": Utils.checkOperationID(operationID),
-            })));
-
-  /// Delete all message from local
-  /// 删除本地所有聊天记录
-  Future<dynamic> deleteAllMsgFromLocal({
-    String? operationID,
-  }) =>
-      _channel.invokeMethod(
-          'deleteAllMsgFromLocal',
+          'revokeMessage',
           _buildParam({
+            'conversationID': conversationID,
+            'clientMsgID': clientMsgID,
             "operationID": Utils.checkOperationID(operationID),
           }));
 
-  /// Delete all message from service
-  /// 删除本地跟服务器所有聊天记录
-  Future<dynamic> deleteAllMsgFromLocalAndSvr({
-    String? operationID,
-  }) =>
-      _channel.invokeMethod(
-          'deleteAllMsgFromLocalAndSvr',
-          _buildParam({
-            "operationID": Utils.checkOperationID(operationID),
-          }));
-
-  /// Mark conversation message as read
-  /// 标记消息已读
-  /// [conversationID] 会话ID
-  /// [messageIDList] 被标记的消息clientMsgID
-  Future markMessageAsReadByConID({
+  /// Mark messages as read
+  /// [conversationID] Conversation ID
+  /// [messageIDList] List of clientMsgIDs of messages to be marked as read
+  Future markMessagesAsReadByMsgID({
     required String conversationID,
     required List<String> messageIDList,
     String? operationID,
   }) =>
       _channel.invokeMethod(
-          'markMessageAsReadByConID',
+          'markMessagesAsReadByMsgID',
           _buildParam({
-            "messageIDList": messageIDList,
             "conversationID": conversationID,
+            "messageIDList": messageIDList,
             "operationID": Utils.checkOperationID(operationID),
           }));
 
-  /// Clear all c2c history message
-  /// 删除本地跟服务器的单聊聊天记录
-  Future<dynamic> clearC2CHistoryMessageFromLocalAndSvr({
-    required String uid,
-    String? operationID,
-  }) =>
-      _channel.invokeMethod(
-          'clearC2CHistoryMessageFromLocalAndSvr',
-          _buildParam({
-            "userID": uid,
-            "operationID": Utils.checkOperationID(operationID),
-          }));
-
-  /// Clear all group history
-  /// 删除本地跟服务器的群聊天记录
-  Future<dynamic> clearGroupHistoryMessageFromLocalAndSvr({
-    required String gid,
-    String? operationID,
-  }) =>
-      _channel.invokeMethod(
-          'clearGroupHistoryMessageFromLocalAndSvr',
-          _buildParam({
-            "groupID": gid,
-            "operationID": Utils.checkOperationID(operationID),
-          }));
-
-  /// Find all history message
-  /// 获取聊天记录(以startMsg为节点，新收到的聊天记录)，用在全局搜索定位某一条消息，然后此条消息后新增的消息
-  /// [userID] 接收消息的用户id
-  /// [conversationID] 会话id，查询通知时可用
-  /// [groupID] 接收消息的组id
-  /// [startMsg] 从这条消息开始查询[count]条，获取的列表index==length-1为最新消息，所以获取下一页历史记录startMsg=list.last
-  /// [count] 一次拉取的总数
-  Future<List<Message>> getHistoryMessageListReverse({
-    String? userID,
-    String? groupID,
+  /// Get chat history (messages prior to startMsg)
+  /// [conversationID] Conversation ID, can be used for querying notifications
+  /// [startMsg] Query [count] messages starting from this message. The message at index == length - 1 is the latest message, so to get the next page of history, use startMsg = list.first
+  /// [count] Total number of messages to retrieve in one request
+  /// [lastMinSeq] Not required for the first page of messages, but necessary for getting the second page of history. Same as [startMsg]
+  Future<AdvancedMessage> getAdvancedHistoryMessageList({
     String? conversationID,
     Message? startMsg,
+    int? lastMinSeq,
     int? count,
     String? operationID,
   }) =>
       _channel
           .invokeMethod(
-              'getHistoryMessageListReverse',
+              'getAdvancedHistoryMessageList',
               _buildParam({
-                'userID': userID ?? '',
-                'groupID': groupID ?? '',
                 'conversationID': conversationID ?? '',
                 'startClientMsgID': startMsg?.clientMsgID ?? '',
-                'count': count ?? 10,
+                'count': count ?? 40,
+                'lastMinSeq': lastMinSeq ?? 0,
                 'operationID': Utils.checkOperationID(operationID),
               }))
-          .then((value) => Utils.toList(value, (map) => Message.fromJson(map)));
+          .then((value) => Utils.toObj(value, (map) => AdvancedMessage.fromJson(map)));
+
+  /// Get chat history (newly received chat history after startMsg). Used for locating a specific message in global search and then fetching messages received after that message.
+  /// [conversationID] Conversation ID, can be used for querying notifications
+  /// [startMsg] Query [count] messages starting from this message. The message at index == length - 1 is the latest message, so to get the next page of history, use startMsg = list.last
+  /// [count] Total number of messages to retrieve in one request
+  Future<AdvancedMessage> getAdvancedHistoryMessageListReverse({
+    String? conversationID,
+    Message? startMsg,
+    int? lastMinSeq,
+    int? count,
+    String? operationID,
+  }) =>
+      _channel
+          .invokeMethod(
+              'getAdvancedHistoryMessageListReverse',
+              _buildParam({
+                'conversationID': conversationID ?? '',
+                'startClientMsgID': startMsg?.clientMsgID ?? '',
+                'count': count ?? 40,
+                'lastMinSeq': lastMinSeq ?? 0,
+                'operationID': Utils.checkOperationID(operationID),
+              }))
+          .then((value) => Utils.toObj(value, (map) => AdvancedMessage.fromJson(map)));
+
+  /// Find message details
+  /// [conversationID] Conversation ID
+  /// [clientMsgIDList] List of message IDs
+  Future<SearchResult> findMessageList({
+    required List<SearchParams> searchParams,
+    String? operationID,
+  }) =>
+      _channel
+          .invokeMethod(
+              'findMessageList',
+              _buildParam({
+                'searchParams': searchParams.map((e) => e.toJson()).toList(),
+                'operationID': Utils.checkOperationID(operationID),
+              }))
+          .then((value) => Utils.toObj(value, (map) => SearchResult.fromJson(map)));
+
+  /// Rich text message
+  /// [text] Input content
+  /// [list] Details of the rich text message
+  Future<Message> createAdvancedTextMessage({
+    required String text,
+    List<RichMessageInfo> list = const [],
+    String? operationID,
+  }) =>
+      _channel
+          .invokeMethod(
+            'createAdvancedTextMessage',
+            _buildParam({
+              'text': text,
+              'richMessageInfoList': list.map((e) => e.toJson()).toList(),
+              "operationID": Utils.checkOperationID(operationID),
+            }),
+          )
+          .then((value) => Utils.toObj(value, (map) => Message.fromJson(map)));
+
+  /// Rich text message with quote
+  /// [text] Content for the reply
+  /// [quoteMsg] The message being replied to
+  /// [list] Details of the rich text message
+  Future<Message> createAdvancedQuoteMessage({
+    required String text,
+    required Message quoteMsg,
+    List<RichMessageInfo> list = const [],
+    String? operationID,
+  }) =>
+      _channel
+          .invokeMethod(
+              'createAdvancedQuoteMessage',
+              _buildParam({
+                'quoteText': text,
+                'quoteMessage': quoteMsg.toJson(),
+                'richMessageInfoList': list.map((e) => e.toJson()).toList(),
+                "operationID": Utils.checkOperationID(operationID),
+              }))
+          .then((value) => Utils.toObj(value, (map) => Message.fromJson(map)));
+
+  /// Send a message
+  /// [message] Message body [createImageMessageByURL],[createSoundMessageByURL],[createVideoMessageByURL],[createFileMessageByURL]
+  /// [userID] User ID to receive the message
+  /// [groupID] Group ID to receive the message
+  /// [offlinePushInfo] Offline message display content
+  Future<Message> sendMessageNotOss({
+    required Message message,
+    required OfflinePushInfo offlinePushInfo,
+    String? userID,
+    String? groupID,
+    bool isOnlineOnly = false,
+    String? operationID,
+  }) =>
+      _channel
+          .invokeMethod(
+              'sendMessageNotOss',
+              _buildParam({
+                'message': message.toJson(),
+                'offlinePushInfo': offlinePushInfo.toJson(),
+                'userID': userID ?? '',
+                'groupID': groupID ?? '',
+                'isOnlineOnly': isOnlineOnly,
+                'operationID': Utils.checkOperationID(operationID),
+              }))
+          .then((value) => Utils.toObj(value, (map) => Message.fromJson(map)));
+
+  /// Create an image message by URL
+  Future<Message> createImageMessageByURL({
+    required PictureInfo sourcePicture,
+    required PictureInfo bigPicture,
+    required PictureInfo snapshotPicture,
+    String? sourcePath,
+    String? operationID,
+  }) =>
+      _channel
+          .invokeMethod(
+            'createImageMessageByURL',
+            _buildParam({
+              'sourcePath': sourcePath,
+              'sourcePicture': sourcePicture.toJson(),
+              'bigPicture': bigPicture.toJson(),
+              'snapshotPicture': snapshotPicture.toJson(),
+              "operationID": Utils.checkOperationID(operationID),
+            }),
+          )
+          .then((value) => Utils.toObj(value, (map) => Message.fromJson(map)));
+
+  /// Create a sound message
+  Future<Message> createSoundMessageByURL({
+    required SoundElem soundElem,
+    String? operationID,
+  }) =>
+      _channel
+          .invokeMethod(
+            'createSoundMessageByURL',
+            _buildParam({
+              'soundElem': soundElem.toJson(),
+              "operationID": Utils.checkOperationID(operationID),
+            }),
+          )
+          .then((value) => Utils.toObj(value, (map) => Message.fromJson(map)));
+
+  /// Create a video message
+  Future<Message> createVideoMessageByURL({
+    required VideoElem videoElem,
+    String? operationID,
+  }) =>
+      _channel
+          .invokeMethod(
+              'createVideoMessageByURL',
+              _buildParam({
+                'videoElem': videoElem.toJson(),
+                "operationID": Utils.checkOperationID(operationID),
+              }))
+          .then((value) => Utils.toObj(value, (map) => Message.fromJson(map)));
+
+  /// Create a file message
+  Future<Message> createFileMessageByURL({
+    required FileElem fileElem,
+    String? operationID,
+  }) =>
+      _channel
+          .invokeMethod(
+              'createFileMessageByURL',
+              _buildParam({
+                'fileElem': fileElem.toJson(),
+                "operationID": Utils.checkOperationID(operationID),
+              }))
+          .then((value) => Utils.toObj(value, (map) => Message.fromJson(map)));
+
+  ///
+  Future setCustomBusinessListener(OnCustomBusinessListener listener) {
+    this.customBusinessListener = listener;
+    return _channel.invokeMethod('setCustomBusinessListener', _buildParam({}));
+  }
+
+  Future setMessageLocalEx({
+    required String conversationID,
+    required String clientMsgID,
+    required String localEx,
+    String? operationID,
+  }) {
+    return _channel.invokeMethod(
+        'setMessageLocalEx',
+        _buildParam({
+          "conversationID": conversationID,
+          "clientMsgID": clientMsgID,
+          "localEx": localEx,
+          "operationID": Utils.checkOperationID(operationID),
+        }));
+  }
+
+  Future setAppBadge(
+    int count, {
+    String? operationID,
+  }) {
+    return _channel.invokeMethod(
+        'setAppBadge',
+        _buildParam({
+          'count': count,
+          'operationID': Utils.checkOperationID(operationID),
+        }));
+  }
 
   static Map _buildParam(Map param) {
     param["ManagerName"] = "messageManager";

@@ -1,25 +1,41 @@
 import '../../flutter_openim_sdk.dart';
 
 /// OA notification
-/// oa 通知
 class OANotification {
+  /// Title
   String? notificationName;
+
+  /// Avatar
   String? notificationFaceURL;
+
+  /// Type
   int? notificationType;
+
+  /// Text content
   String? text;
+
+  /// Redirect link
   String? externalUrl;
 
-  /// Notification Mix Type
-  /// 0: Plain text notification
-  /// 1: Text+picture notification
-  /// 2: Text+video notification
-  /// 3: Text+file notification
-  /// 0：纯文字通知 1：文字+图片通知 2：文字+视频通知 3：文字+文件通知
+  /// 0: Text-only notification
+  /// 1: Text + Image notification
+  /// 2: Text + Video notification
+  /// 3: Text + File notification
   int? mixType;
+
+  /// Image information
   PictureElem? pictureElem;
+
+  /// Sound information
   SoundElem? soundElem;
+
+  /// Video information
   VideoElem? videoElem;
+
+  /// File information
   FileElem? fileElem;
+
+  /// Additional field
   String? ex;
 
   OANotification(
@@ -81,11 +97,18 @@ class OANotification {
   }
 }
 
-/// Group common notification
+/// 群事件通知
 class GroupNotification {
+  /// 群信息
   GroupInfo? group;
+
+  /// 当前事件操作者信息
   GroupMembersInfo? opUser;
+
+  /// 群拥有者信息
   GroupMembersInfo? groupOwnerUser;
+
+  /// 产生影响的群成员列表
   List<GroupMembersInfo>? memberList;
 
   GroupNotification({
@@ -129,11 +152,15 @@ class GroupNotification {
   }
 }
 
-/// User is invited to the group notification
 /// 用户被邀请进群通知
 class InvitedJoinGroupNotification {
+  /// 群信息
   GroupInfo? group;
+
+  /// 操作者信息
   GroupMembersInfo? opUser;
+
+  /// 被邀请进群的成员信息
   List<GroupMembersInfo>? invitedUserList;
 
   InvitedJoinGroupNotification({this.group, this.opUser, this.invitedUserList});
@@ -167,11 +194,15 @@ class InvitedJoinGroupNotification {
   }
 }
 
-/// Group kicked member notification
 /// 组踢出成员通知
 class KickedGroupMemeberNotification {
+  /// 群信息
   GroupInfo? group;
+
+  /// 操作者信息
   GroupMembersInfo? opUser;
+
+  /// 被踢出群的成员信息列表
   List<GroupMembersInfo>? kickedUserList;
 
   KickedGroupMemeberNotification(
@@ -206,10 +237,12 @@ class KickedGroupMemeberNotification {
   }
 }
 
-/// Exit group notification
 /// 退出群通知
 class QuitGroupNotification {
+  /// 群信息
   GroupInfo? group;
+
+  /// 退群的成员信息
   GroupMembersInfo? quitUser;
 
   QuitGroupNotification({this.group, this.quitUser});
@@ -233,10 +266,12 @@ class QuitGroupNotification {
   }
 }
 
-/// Enter group notification
 /// 进群通知
 class EnterGroupNotification {
+  /// 群信息
   GroupInfo? group;
+
+  /// 进入群的成员信息
   GroupMembersInfo? entrantUser;
 
   EnterGroupNotification({this.group, this.entrantUser});
@@ -260,11 +295,15 @@ class EnterGroupNotification {
   }
 }
 
-/// Group rights transfer noticication
 /// 群权转让通知
 class GroupRightsTransferNoticication {
+  /// 群信息
   GroupInfo? group;
+
+  /// 操作者信息
   GroupMembersInfo? opUser;
+
+  /// 群新的拥有者信息
   GroupMembersInfo? newGroupOwner;
 
   GroupRightsTransferNoticication({
@@ -298,12 +337,18 @@ class GroupRightsTransferNoticication {
   }
 }
 
-/// Mute member notification
 /// 禁言成员通知
 class MuteMemberNotification {
+  /// 群信息
   GroupInfo? group;
+
+  /// 操作者信息
   GroupMembersInfo? opUser;
+
+  /// 被禁言的成员信息
   GroupMembersInfo? mutedUser;
+
+  /// 禁言时间s
   int? mutedSeconds;
 
   MuteMemberNotification({
@@ -340,11 +385,15 @@ class MuteMemberNotification {
   }
 }
 
-/// Burn after reading notification
 /// 阅后即焚通知
 class BurnAfterReadingNotification {
+  /// 接收者
   String? recvID;
+
+  /// 发送者
   String? sendID;
+
+  /// 是否开启
   bool? isPrivate;
 
   BurnAfterReadingNotification({this.recvID, this.sendID, this.isPrivate});
@@ -364,11 +413,15 @@ class BurnAfterReadingNotification {
   }
 }
 
-/// Group member info changed notification
-/// 禁言成员通知
+/// 群成员信息发送变化通知
 class GroupMemberInfoChangedNotification {
+  /// 群信息
   GroupInfo? group;
+
+  /// 操作者信息
   GroupMembersInfo? opUser;
+
+  /// 资料发生改变的成员
   GroupMembersInfo? changedUser;
 
   GroupMemberInfoChangedNotification({

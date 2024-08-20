@@ -1,40 +1,65 @@
 import 'package:flutter_openim_sdk/flutter_openim_sdk.dart';
 
+/// Message Listener
 class OnAdvancedMsgListener {
-  /// Message read receipt
-  Function(List<ReadReceiptInfo> list)? onRecvC2CMessageReadReceipt;
-
-  Function(List<ReadReceiptInfo> list)? onRecvGroupMessageReadReceipt;
-
-  /// A friend revoked a message
-  Function(String msgId)? onRecvMessageRevoked;
-
-  /// Receive new message
+  Function(Message msg)? onMsgDeleted;
+  Function(RevokedInfo info)? onNewRecvMessageRevoked;
+  Function(List<ReadReceiptInfo> list)? onRecvC2CReadReceipt;
+  Function(List<ReadReceiptInfo> list)? onRecvGroupReadReceipt;
+  Function(String msgID, List<String> list)? onRecvMessageExtensionsDeleted;
   Function(Message msg)? onRecvNewMessage;
+  Function(Message msg)? onRecvOfflineNewMessage;
+  Function(Message msg)? onRecvOnlineOnlyMessage;
 
   /// Uniquely identifies
   String id;
 
   OnAdvancedMsgListener({
-    this.onRecvC2CMessageReadReceipt,
-    this.onRecvGroupMessageReadReceipt,
-    this.onRecvMessageRevoked,
+    this.onMsgDeleted,
+    this.onNewRecvMessageRevoked,
+    this.onRecvC2CReadReceipt,
+    this.onRecvGroupReadReceipt,
+    this.onRecvMessageExtensionsDeleted,
     this.onRecvNewMessage,
+    this.onRecvOfflineNewMessage,
+    this.onRecvOnlineOnlyMessage,
   }) : id = "id_${DateTime.now().microsecondsSinceEpoch}";
 
-  void recvC2CMessageReadReceipt(List<ReadReceiptInfo> list) {
-    onRecvC2CMessageReadReceipt?.call(list);
+  void msgDeleted(Message msg) {
+    onMsgDeleted?.call(msg);
   }
 
-  void recvGroupMessageReadReceipt(List<ReadReceiptInfo> list) {
-    onRecvGroupMessageReadReceipt?.call(list);
+  /// Message has been retracted
+  void newRecvMessageRevoked(RevokedInfo info) {
+    onNewRecvMessageRevoked?.call(info);
   }
 
-  void recvMessageRevoked(String msgId) {
-    onRecvMessageRevoked?.call(msgId);
+  /// C2C Message Read Receipt
+  void recvC2CReadReceipt(List<ReadReceiptInfo> list) {
+    onRecvC2CReadReceipt?.call(list);
   }
 
+  /// Group Message Read Receipt
+  void recvGroupReadReceipt(List<ReadReceiptInfo> list) {
+    onRecvGroupReadReceipt?.call(list);
+  }
+
+  /// Received Extended Message Deleted
+  /// [list] TypeKey that was deleted
+  void recvMessageExtensionsDeleted(String msgID, List<String> list) {
+    onRecvMessageExtensionsDeleted?.call(msgID, list);
+  }
+
+  /// Received a new message
   void recvNewMessage(Message msg) {
     onRecvNewMessage?.call(msg);
+  }
+
+  void recvOfflineNewMessage(Message msg) {
+    onRecvOfflineNewMessage?.call(msg);
+  }
+
+  void recvOnlineOnlyMessage(Message msg) {
+    onRecvOnlineOnlyMessage?.call(msg);
   }
 }

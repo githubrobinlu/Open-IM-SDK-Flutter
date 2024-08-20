@@ -14,10 +14,26 @@ public class OnAdvancedMsgListener implements open_im_sdk_callback.OnAdvancedMsg
     }
 
     @Override
+    public void onMsgDeleted(String s) {
+        final Map<String, String> values = new ArrayMap<>();
+        values.put("id", id);
+        values.put("message", s);
+        CommonUtil.emitEvent("advancedMsgListener", "onMsgDeleted", values);
+    }
+
+    @Override
+    public void onNewRecvMessageRevoked(String s) {
+        final Map<String, String> values = new ArrayMap<>();
+        values.put("id", id);
+        values.put("messageRevoked", s);
+        CommonUtil.emitEvent("advancedMsgListener", "onNewRecvMessageRevoked", values);
+    }
+
+    @Override
     public void onRecvC2CReadReceipt(String s) {
         final Map<String, String> values = new ArrayMap<>();
         values.put("id", id);
-        values.put("c2cMessageReadReceipt", s);
+        values.put("msgReceiptList", s);
         CommonUtil.emitEvent("advancedMsgListener", "onRecvC2CReadReceipt", values);
     }
 
@@ -25,23 +41,59 @@ public class OnAdvancedMsgListener implements open_im_sdk_callback.OnAdvancedMsg
     public void onRecvGroupReadReceipt(String s) {
         final Map<String, String> values = new ArrayMap<>();
         values.put("id", id);
-        values.put("groupMessageReadReceipt", s);
+        values.put("groupMsgReceiptList", s);
         CommonUtil.emitEvent("advancedMsgListener", "onRecvGroupReadReceipt", values);
     }
 
+
     @Override
-    public void onRecvMessageRevoked(String s) {
+    public void onRecvMessageExtensionsAdded(String s, String s1) {
         final Map<String, String> values = new ArrayMap<>();
         values.put("id", id);
-        values.put("revokedMessage", s);
-        CommonUtil.emitEvent("advancedMsgListener", "onRecvMessageRevoked", values);
+        values.put("msgID", s);
+        values.put("reactionExtensionList", s1);
+        CommonUtil.emitEvent("advancedMsgListener", "onRecvMessageExtensionsAdded", values);
+    }
+
+    @Override
+    public void onRecvMessageExtensionsChanged(String s, String s1) {
+        final Map<String, String> values = new ArrayMap<>();
+        values.put("id", id);
+        values.put("msgID", s);
+        values.put("reactionExtensionList", s1);
+        CommonUtil.emitEvent("advancedMsgListener", "onRecvMessageExtensionsChanged", values);
+    }
+
+    @Override
+    public void onRecvMessageExtensionsDeleted(String s, String s1) {
+        final Map<String, String> values = new ArrayMap<>();
+        values.put("id", id);
+        values.put("msgID", s);
+        values.put("reactionExtensionKeyList", s1);
+        CommonUtil.emitEvent("advancedMsgListener", "onRecvMessageExtensionsDeleted", values);
     }
 
     @Override
     public void onRecvNewMessage(String s) {
         final Map<String, String> values = new ArrayMap<>();
         values.put("id", id);
-        values.put("newMessage", s);
+        values.put("message", s);
         CommonUtil.emitEvent("advancedMsgListener", "onRecvNewMessage", values);
+    }
+
+    @Override
+    public void onRecvOfflineNewMessage(String s) {
+        final Map<String, String> values = new ArrayMap<>();
+        values.put("id", id);
+        values.put("message", s);
+        CommonUtil.emitEvent("advancedMsgListener", "onRecvOfflineNewMessage", values);
+    }
+
+    @Override
+    public void onRecvOnlineOnlyMessage(String s) {
+        final Map<String, String> values = new ArrayMap<>();
+        values.put("id", id);
+        values.put("message", s);
+        CommonUtil.emitEvent("advancedMsgListener", "onRecvOnlineOnlyMessage", values);
     }
 }

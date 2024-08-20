@@ -7,30 +7,28 @@ class UserManager {
 
   UserManager(this._channel);
 
-  /// Observe user info changes
-  /// 用户资料改变监听
+  /// User profile change listener
   Future setUserListener(OnUserListener listener) {
     this.listener = listener;
     return _channel.invokeMethod('setUserListener', _buildParam({}));
   }
 
-  /// Query user information
-  /// 获取用户资料
-  Future<List<UserInfo>> getUsersInfo({
-    required List<String> uidList,
+  /// Get user information
+  /// [userIDList] List of user IDs
+  Future<List<FullUserInfo>> getUsersInfo({
+    required List<String> userIDList,
     String? operationID,
   }) =>
       _channel
           .invokeMethod(
               'getUsersInfo',
               _buildParam({
-                'uidList': uidList,
+                'userIDList': userIDList,
                 'operationID': Utils.checkOperationID(operationID),
               }))
-          .then((value) => Utils.toList(value, (v) => UserInfo.fromJson(v)));
+          .then((value) => Utils.toList(value, (v) => FullUserInfo.fromJson(v)));
 
-  /// Get the information of the currently logged in user
-  /// 获取当前登录用户的信息
+  /// Get information of the currently logged-in user
   Future<UserInfo> getSelfUserInfo({
     String? operationID,
   }) =>
@@ -42,16 +40,15 @@ class UserManager {
               }))
           .then((value) => Utils.toObj(value, (map) => UserInfo.fromJson(map)));
 
-  /// Modify current user info
-  /// 修改当前登录用户资料
+  /// Modify the profile of the currently logged-in user
+  /// [nickname] Nickname
+  /// [faceURL] Profile picture
+  /// [appManagerLevel]
+  /// [ex] Additional fields
   Future<String?> setSelfInfo({
     String? nickname,
     String? faceURL,
-    int? gender,
-    int? appMangerLevel,
-    String? phoneNumber,
-    int? birth,
-    String? email,
+    int? appManagerLevel,
     String? ex,
     String? operationID,
   }) =>
@@ -61,15 +58,92 @@ class UserManager {
             // 'userID': userID,
             'nickname': nickname,
             'faceURL': faceURL,
-            'gender': gender,
-            'appMangerLevel': appMangerLevel,
-            'phoneNumber': phoneNumber,
-            'birth': birth,
-            'email': email,
+            'appManagerLevel': appManagerLevel,
             'ex': ex,
             'operationID': Utils.checkOperationID(operationID),
           }));
 
+  Future<List<UserStatusInfo>> subscribeUsersStatus(
+    List<String> userIDs, {
+    String? operationID,
+  }) {
+    return _channel
+        .invokeMethod(
+            'subscribeUsersStatus',
+            _buildParam({
+              'userIDs': userIDs,
+              'operationID': Utils.checkOperationID(operationID),
+            }))
+        .then((value) => Utils.toList(value, (map) => UserStatusInfo.fromJson(map)));
+  }
+
+  Future unsubscribeUsersStatus(
+    List<String> userIDs, {
+    String? operationID,
+  }) {
+    return _channel.invokeMethod(
+        'unsubscribeUsersStatus',
+        _buildParam({
+          'userIDs': userIDs,
+          'operationID': Utils.checkOperationID(operationID),
+        }));
+  }
+
+  Future<List<UserStatusInfo>> getSubscribeUsersStatus({
+    String? operationID,
+  }) {
+    return _channel
+        .invokeMethod(
+            'getSubscribeUsersStatus',
+            _buildParam({
+              'operationID': Utils.checkOperationID(operationID),
+            }))
+        .then((value) => Utils.toList(value, (map) => UserStatusInfo.fromJson(map)));
+  }
+
+  Future<List<UserStatusInfo>> getUserStatus(
+    List<String> userIDs, {
+    String? operationID,
+  }) {
+    return _channel
+        .invokeMethod(
+            'getUserStatus',
+            _buildParam({
+              'userIDs': userIDs,
+              'operationID': Utils.checkOperationID(operationID),
+            }))
+        .then((value) => Utils.toList(value, (map) => UserStatusInfo.fromJson(map)));
+  }
+
+  Future<List<FullUserInfo>> getUsersInfoWithCache(
+    List<String> userIDs, {
+    String? groupID,
+    String? operationID,
+  }) {
+    return _channel
+        .invokeMethod(
+            'getUsersInfoWithCache',
+            _buildParam({
+              'userIDs': userIDs,
+              'groupID': groupID,
+              'operationID': Utils.checkOperationID(operationID),
+            }))
+        .then((value) => Utils.toList(value, (map) => FullUserInfo.fromJson(map)));
+  }
+
+/*
+  Future<String?> setSelfUserInfoEx(
+    UserInfo userInfo, {
+    String? operationID,
+  }) {
+    return _channel.invokeMethod(
+        'setSelfUserInfoEx',
+        _buildParam({
+          ...userInfo.toJson(),
+          'operationID': Utils.checkOperationID(operationID),
+        }));
+  }
+*/
   static Map _buildParam(Map param) {
     param["ManagerName"] = "userManager";
     return param;

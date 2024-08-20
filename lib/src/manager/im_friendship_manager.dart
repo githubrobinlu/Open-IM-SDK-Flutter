@@ -7,84 +7,81 @@ class FriendshipManager {
 
   FriendshipManager(this._channel);
 
-  /// Set up a friend relationship listener
-  /// 好友关系监听
+  /// Friend Relationship Listener
   Future setFriendshipListener(OnFriendshipListener listener) {
     this.listener = listener;
     return _channel.invokeMethod('setFriendListener', _buildParam({}));
   }
 
-  /// Get friend info by user id
-  /// 查询好友信息
-  /// [uidList] 好友的userID集合
-  Future<List<UserInfo>> getFriendsInfo({
-    required List<String> uidList,
+  /// Query Friend Information
+  /// [userIDList] List of user IDs
+  Future<List<FullUserInfo>> getFriendsInfo({
+    required List<String> userIDList,
     String? operationID,
   }) =>
       _channel
           .invokeMethod(
               'getFriendsInfo',
               _buildParam({
-                "uidList": uidList,
+                "userIDList": userIDList,
                 "operationID": Utils.checkOperationID(operationID),
               }))
-          .then((value) => Utils.toList(value, (v) => UserInfo.fromJson(v)));
+          .then((value) => Utils.toList(value, (v) => FullUserInfo.fromJson(v)));
 
-  /// Send an friend application
-  /// 发送一个好友请求，需要对方调用同意申请才能成为好友。
-  /// [uid] 被邀请的用户ID
-  /// [reason] 说明
+  /// Send a Friend Request, the other party needs to accept the request to become friends.
+  /// [userID] User ID to be invited
+  /// [reason] Remark description
   Future<dynamic> addFriend({
-    required String uid,
+    required String userID,
     String? reason,
     String? operationID,
   }) =>
       _channel.invokeMethod(
           'addFriend',
           _buildParam({
-            "toUserID": uid,
+            "toUserID": userID,
             "reqMsg": reason,
             "operationID": Utils.checkOperationID(operationID),
           }));
 
-  /// Get someone's request to add me as a friend
-  /// 获取别人加我为好友的申请
-  Future<List<FriendApplicationInfo>> getRecvFriendApplicationList(
-          {String? operationID}) =>
-      _channel
-          .invokeMethod(
-              'getRecvFriendApplicationList',
-              _buildParam({
-                "operationID": Utils.checkOperationID(operationID),
-              }))
-          .then((value) =>
-              Utils.toList(value, (v) => FriendApplicationInfo.fromJson(v)));
+  /// Get Friend Requests Sent to Me
+  Future<List<FriendApplicationInfo>> getFriendApplicationListAsRecipient({String? operationID}) => _channel
+      .invokeMethod(
+          'getFriendApplicationListAsRecipient',
+          _buildParam({
+            "operationID": Utils.checkOperationID(operationID),
+          }))
+      .then((value) => Utils.toList(value, (v) => FriendApplicationInfo.fromJson(v)));
 
-  /// Get friend requests from me
-  /// 获取我发出的好友申请
-  Future<List<FriendApplicationInfo>> getSendFriendApplicationList(
-          {String? operationID}) =>
-      _channel
-          .invokeMethod(
-              'getSendFriendApplicationList',
-              _buildParam({
-                "operationID": Utils.checkOperationID(operationID),
-              }))
-          .then((value) =>
-              Utils.toList(value, (v) => FriendApplicationInfo.fromJson(v)));
+  /// Get Friend Requests Sent by Me
+  Future<List<FriendApplicationInfo>> getFriendApplicationListAsApplicant({String? operationID}) => _channel
+      .invokeMethod(
+          'getFriendApplicationListAsApplicant',
+          _buildParam({
+            "operationID": Utils.checkOperationID(operationID),
+          }))
+      .then((value) => Utils.toList(value, (v) => FriendApplicationInfo.fromJson(v)));
 
-  /// Find all friends including those who have been added to the blacklist
-  /// 获取好友列表包含已拉入黑名单的好友
-  Future<List<UserInfo>> getFriendList({String? operationID}) => _channel
+  /// Get Friend List, including friends who have been put into the blacklist
+  Future<List<FullUserInfo>> getFriendList({String? operationID}) => _channel
       .invokeMethod(
           'getFriendList',
           _buildParam({
             "operationID": Utils.checkOperationID(operationID),
           }))
-      .then((value) => Utils.toList(value, (v) => UserInfo.fromJson(v)));
+      .then((value) => Utils.toList(value, (v) => FullUserInfo.fromJson(v)));
 
-  /// Find all friends including those who have been added to the blacklist
-  /// 获取好友列表
+  Future<List<FullUserInfo>> getFriendListPage({String? operationID, int offset = 0, int count = 40}) => _channel
+      .invokeMethod(
+          'getFriendListPage',
+          _buildParam({
+            'offset': offset,
+            'count': count,
+            "operationID": Utils.checkOperationID(operationID),
+          }))
+      .then((value) => Utils.toList(value, (v) => FullUserInfo.fromJson(v)));
+
+  /// Get Friend List, including friends who have been put into the blacklist (returns a map)
   Future<List<dynamic>> getFriendListMap({String? operationID}) => _channel
       .invokeMethod(
           'getFriendList',
@@ -93,126 +90,135 @@ class FriendshipManager {
           }))
       .then((value) => Utils.toListMap(value));
 
-  /// Modify friend remark name
-  /// 设置好友备注
-  /// [uid] 好友的userID
-  /// [remark] 好友的备注
+  Future<List<dynamic>> getFriendListPageMap({String? operationID, int offset = 0, int count = 40}) => _channel
+    .invokeMethod(
+        'getFriendListPage',
+        _buildParam({
+          'offset': offset,
+          'count': count,
+          "operationID": Utils.checkOperationID(operationID),
+        }))
+    .then((value) => Utils.toListMap(value));
+
+  /// Set Friend's Remark
+  /// [userID] Friend's userID
+  /// [remark] Friend's remark
   Future<dynamic> setFriendRemark({
-    required String uid,
+    required String userID,
     required String remark,
     String? operationID,
   }) =>
       _channel.invokeMethod(
           'setFriendRemark',
           _buildParam({
-            'toUserID': uid,
+            'toUserID': userID,
             'remark': remark,
             "operationID": Utils.checkOperationID(operationID),
           }));
 
-  /// Add friends to blacklist
-  /// 加入黑名单
-  /// [uid]被加入黑名单的好友ID
+  /// Add to Blacklist
+  /// [userID] Friend's ID to be added to the blacklist
   Future<dynamic> addBlacklist({
-    required String uid,
+    required String userID,
+    String? ex,
     String? operationID,
   }) =>
       _channel.invokeMethod(
           'addBlacklist',
           _buildParam({
-            "uid": uid,
+            "userID": userID,
+            "ex": ex,
             "operationID": Utils.checkOperationID(operationID),
           }));
 
-  /// Find all blacklist
-  /// 获取黑名单列表
-  Future<List<UserInfo>> getBlacklist({String? operationID}) => _channel
+  /// Get Blacklist
+  Future<List<BlacklistInfo>> getBlacklist({String? operationID}) => _channel
       .invokeMethod(
           'getBlacklist',
           _buildParam({
             "operationID": Utils.checkOperationID(operationID),
           }))
-      .then((value) => Utils.toList(value, (v) => UserInfo.fromJson(v)));
+      .then((value) => Utils.toList(value, (v) => BlacklistInfo.fromJson(v)));
 
-  /// Remove from blacklist
-  /// 从黑名单移除
+  /// Remove from Blacklist
+  /// [userID] User ID
   Future<dynamic> removeBlacklist({
-    required String uid,
+    required String userID,
     String? operationID,
   }) =>
       _channel.invokeMethod(
           'removeBlacklist',
           _buildParam({
-            "uid": uid,
+            "userID": userID,
             "operationID": Utils.checkOperationID(operationID),
           }));
 
-  /// Determine if there is a friendship by userId
-  /// 检查友好关系
+  /// Check Friendship Status
+  /// [userIDList] List of user IDs
   Future<List<FriendshipInfo>> checkFriend({
-    required List<String> uidList,
+    required List<String> userIDList,
     String? operationID,
   }) =>
       _channel
           .invokeMethod(
               'checkFriend',
               _buildParam({
-                'uidList': uidList,
+                'userIDList': userIDList,
                 "operationID": Utils.checkOperationID(operationID),
               }))
-          .then((value) =>
-              Utils.toList(value, (v) => FriendshipInfo.fromJson(v)));
+          .then((value) => Utils.toList(value, (v) => FriendshipInfo.fromJson(v)));
 
-  /// Dissolve friendship from friend list
-  /// 删除好友
+  /// Delete Friend
+  /// [userID] User ID
   Future<dynamic> deleteFriend({
-    required String uid,
+    required String userID,
     String? operationID,
   }) =>
       _channel.invokeMethod(
           'deleteFriend',
           _buildParam({
-            "uid": uid,
+            "userID": userID,
             "operationID": Utils.checkOperationID(operationID),
           }));
 
-  /// Accept application of be friend
-  /// 接受好友请求
+  /// Accept Friend Request
+  /// [userID] User ID
+  /// [handleMsg] Remark description
   Future<dynamic> acceptFriendApplication({
-    required String uid,
+    required String userID,
     String? handleMsg,
     String? operationID,
   }) =>
       _channel.invokeMethod(
           'acceptFriendApplication',
           _buildParam({
-            "toUserID": uid,
+            "toUserID": userID,
             "handleMsg": handleMsg,
             "operationID": Utils.checkOperationID(operationID),
           }));
 
-  /// Refuse application of be friend
-  /// 拒绝好友请求
+  /// Reject Friend Request
+  /// [userID] User ID
+  /// [handleMsg] Remark description
   Future<dynamic> refuseFriendApplication({
-    required String uid,
+    required String userID,
     String? handleMsg,
     String? operationID,
   }) =>
       _channel.invokeMethod(
           'refuseFriendApplication',
           _buildParam({
-            "toUserID": uid,
+            "toUserID": userID,
             "handleMsg": handleMsg,
             "operationID": Utils.checkOperationID(operationID),
           }));
 
-  /// Search friends
-  /// 查好友
-  /// [keywordList] 搜索关键词，目前仅支持一个关键词搜索，不能为空
-  /// [isSearchUserID] 是否以关键词搜索好友ID(注：不可以同时为false)，为空默认false
-  /// [isSearchNickname] 是否以关键词搜索昵称，为空默认false
-  /// [isSearchRemark] 是否以关键词搜索备注名，为空默认false
-  Future<List<FriendInfo>> searchFriends({
+  /// Search for Friends
+  /// [keywordList] Search keywords, currently supports only one keyword search, cannot be empty
+  /// [isSearchUserID] Whether to search for friend IDs with keywords (note: cannot be false at the same time), defaults to false if empty
+  /// [isSearchNickname] Whether to search by nickname with keywords, defaults to false if empty
+  /// [isSearchRemark] Whether to search by remark name with keywords, defaults to false if empty
+  Future<List<SearchFriendsInfo>> searchFriends({
     List<String> keywordList = const [],
     bool isSearchUserID = false,
     bool isSearchNickname = false,
@@ -231,8 +237,21 @@ class FriendshipManager {
                 },
                 'operationID': Utils.checkOperationID(operationID),
               }))
-          .then((value) =>
-              Utils.toList(value, (map) => FriendInfo.fromJson(map)));
+          .then((value) => Utils.toList(value, (map) => SearchFriendsInfo.fromJson(map)));
+
+  Future<String?> setFriendsEx(
+    List<String> friendIDs, {
+    String? ex,
+    String? operationID,
+  }) {
+    return _channel.invokeMethod(
+        'setFriendsEx',
+        _buildParam({
+          "friendIDs": friendIDs,
+          "ex": ex,
+          "operationID": Utils.checkOperationID(operationID),
+        }));
+  }
 
   static Map _buildParam(Map param) {
     param["ManagerName"] = "friendshipManager";

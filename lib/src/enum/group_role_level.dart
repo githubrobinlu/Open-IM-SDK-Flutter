@@ -1,7 +1,11 @@
-/// 1 ordinary member, 2 group owners, 3 administrators
-/// 1普通成员, 2群主，3管理员
+/// Group Member Roles
 class GroupRoleLevel {
-  static const member = 1;
-  static const owner = 2;
-  static const admin = 3;
+  /// Group owner
+  static const owner = 100;
+
+  /// Administrator
+  static const admin = 60;
+
+  /// Regular member
+  static const member = 20;
 }
